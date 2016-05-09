@@ -44,6 +44,8 @@
       $input.value = "";
       client.send(msg);
     });
+
+    $input.focus();
   });
 
 })(window.GoTalk);
