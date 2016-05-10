@@ -13,31 +13,47 @@ const (
 )
 
 type Server struct {
-	connections   []*websocket.Conn
-	broadcastChan chan []byte
+	connections     []*websocket.Conn
+	broadcastChan   chan []byte
+	newClientChan   chan *websocket.Conn
+	closeClientChan chan *websocket.Conn
 }
 
 func NewServer() (server *Server) {
-	server = &Server{broadcastChan: make(chan []byte)}
+	server = &Server{
+		broadcastChan:   make(chan []byte),
+		newClientChan:   make(chan *websocket.Conn),
+		closeClientChan: make(chan *websocket.Conn),
+	}
 	go server.broadcast()
 	return
 }
 
 func (s *Server) broadcast() {
 	for {
-		payload := <-s.broadcastChan
-		for _, conn := range s.connections {
-			conn.Write(payload)
+		select {
+		case payload := <-s.broadcastChan:
+			for _, conn := range s.connections {
+				conn.Write(payload)
+			}
+		case client := <-s.newClientChan:
+			s.connections = append(s.connections, client)
+			go s.readClient(client)
+		case client := <-s.closeClientChan:
+			err := client.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }
 
-func (s *Server) HandleConnection(ws *websocket.Conn) {
-	s.connections = append(s.connections, ws)
+func (s *Server) readClient(ws *websocket.Conn) {
 	decoder := json.NewDecoder(ws)
 	for {
 		var payload map[string]interface{}
 		if err := decoder.Decode(&payload); err == io.EOF {
+			s.closeClientChan <- ws
 			break
 		} else if err != nil {
 			log.Fatal(err)
@@ -51,6 +67,12 @@ func (s *Server) HandleConnection(ws *websocket.Conn) {
 			log.Fatal(err)
 		}
 		s.broadcastChan <- responsePayload
+	}
+}
+
+func (s *Server) HandleConnection(ws *websocket.Conn) {
+	s.newClientChan <- ws
+	select {
 	}
 }
 
