@@ -3,7 +3,7 @@
 
   function ChatClient(onrecv) {
     var url = 'ws://' + document.location.host + '/chat'
-    this._ws = new WebSocket(url, 'go-talk/1.0');
+    this._ws = new WebSocket(url, []);
     this._ws.addEventListener('close', function() {
       console.warn('WS connection closed');
     });
