@@ -14,31 +14,28 @@ const (
 	staticRoot = "./src/github.com/mnesvold/chatter/www"
 )
 
-var (
-	port = flag.Int("port", 8000, "port to serve site over")
-)
-
-var (
+type chatServer struct {
 	connections   []*websocket.Conn
 	broadcastChan chan []byte
-	closeChan     chan bool
-)
+}
 
-func broadcast() {
+func NewServer() *chatServer {
+	server = &chatServer{broadcastChan: make(chan []byte)}
+	go server.broadcast()
+	return server
+}
+
+func (s *chatServer) broadcast() {
 	for {
-		select {
-		case payload := <-broadcastChan:
-			for _, conn := range connections {
-				conn.Write(payload)
-			}
-		case <-closeChan:
-			break
+		payload := <-s.broadcastChan
+		for _, conn := range s.connections {
+			conn.Write(payload)
 		}
 	}
 }
 
-func echoServer(ws *websocket.Conn) {
-	connections = append(connections, ws)
+func (s *chatServer) HandleConnection(ws *websocket.Conn) {
+	s.connections = append(s.connections, ws)
 	decoder := json.NewDecoder(ws)
 	for {
 		var payload map[string]interface{}
@@ -55,20 +52,21 @@ func echoServer(ws *websocket.Conn) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		broadcastChan <- responsePayload
+		s.broadcastChan <- responsePayload
 	}
 }
+
+var (
+	port = flag.Int("port", 8000, "port to serve site over")
+)
 
 func main() {
 	flag.Parse()
 
-	broadcastChan = make(chan []byte)
-	closeChan = make(chan bool)
-	go broadcast()
+	server := NewServer()
 
-	//http.HandleFunc("/mirror/", serveMirror)
 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(staticRoot))))
-	http.Handle("/chat", websocket.Handler(echoServer))
+	http.Handle("/chat", websocket.Handler(server.HandleConnection))
 
 	log.Printf("Listening on port %d\n", *port)
 	bind := fmt.Sprintf(":%d", *port)
