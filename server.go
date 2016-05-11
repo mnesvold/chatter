@@ -72,8 +72,7 @@ func (s *Server) readClient(ws *websocket.Conn) {
 
 func (s *Server) HandleConnection(ws *websocket.Conn) {
 	s.newClientChan <- ws
-	select {
-	}
+	select {} // returning from this method would close the connection, so block instead
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
