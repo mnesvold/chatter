@@ -25,11 +25,11 @@ func NewServer() (server *Server) {
 		newClientChan:   make(chan *websocket.Conn),
 		closeClientChan: make(chan *websocket.Conn),
 	}
-	go server.broadcast()
+	go server.handleClients()
 	return
 }
 
-func (s *Server) broadcast() {
+func (s *Server) handleClients() {
 	for {
 		select {
 		case payload := <-s.broadcastChan:
