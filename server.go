@@ -13,17 +13,17 @@ const (
 )
 
 type Server struct {
-	connections     []*websocket.Conn
+	connections     []io.ReadWriteCloser
 	broadcastChan   chan []byte
-	newClientChan   chan *websocket.Conn
-	closeClientChan chan *websocket.Conn
+	newClientChan   chan io.ReadWriteCloser
+	closeClientChan chan io.ReadWriteCloser
 }
 
 func NewServer() (server *Server) {
 	server = &Server{
 		broadcastChan:   make(chan []byte),
-		newClientChan:   make(chan *websocket.Conn),
-		closeClientChan: make(chan *websocket.Conn),
+		newClientChan:   make(chan io.ReadWriteCloser),
+		closeClientChan: make(chan io.ReadWriteCloser),
 	}
 	go server.handleClients()
 	return
@@ -34,7 +34,7 @@ func (s *Server) handleClients() {
 		select {
 		case payload := <-s.broadcastChan:
 			for _, conn := range s.connections {
-				conn.Write(payload)
+				go conn.Write(payload)
 			}
 		case client := <-s.newClientChan:
 			s.connections = append(s.connections, client)
@@ -48,7 +48,7 @@ func (s *Server) handleClients() {
 	}
 }
 
-func (s *Server) readClient(ws *websocket.Conn) {
+func (s *Server) readClient(ws io.ReadWriteCloser) {
 	decoder := json.NewDecoder(ws)
 	for {
 		var payload map[string]interface{}
