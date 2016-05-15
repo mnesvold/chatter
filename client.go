@@ -8,11 +8,11 @@ import (
 
 type client struct {
 	rwc  io.ReadWriteCloser
-	send <-chan []byte
+	send chan []byte
 	recv chan<- map[string]interface{}
 }
 
-func newClient(rwc io.ReadWriteCloser, send <-chan []byte, recv chan<- map[string]interface{}) *client {
+func newClient(rwc io.ReadWriteCloser, send chan []byte, recv chan<- map[string]interface{}) *client {
 	client := client{rwc, send, recv}
 	go client.read()
 	go client.write()
@@ -41,6 +41,10 @@ func (c *client) write() {
 			log.Fatal(err) // TODO: handle error
 		}
 	}
+}
+
+func (c *client) Send(data []byte) {
+	c.send <- data
 }
 
 func (c *client) Close() (err error) {

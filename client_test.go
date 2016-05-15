@@ -90,9 +90,20 @@ func TestClientWrite(t *testing.T) {
 	expected := []byte(`{"hello":"world"}`)
 	ctx := newTestContext()
 	defer ctx.Close(t)
+	ctx.client.Send(expected)
+
+	bufferReady := make(chan bool)
+	go func() {
+		for ctx.output.Len() < len(expected) {
+		}
+		bufferReady <- true
+	}()
 	select {
-	case ctx.send <- expected:
-		// continue the test
+	case <-bufferReady:
+		actual := ctx.output.Bytes()
+		if !bytes.Equal(actual, expected) {
+			t.Fatalf("Expected %q; client sent %q instead", expected, actual)
+		}
 	case <-time.After(1 * time.Second):
 		t.Fatal("timeout")
 	}
