@@ -39,10 +39,11 @@
       appendMessage(msg);
     }
 
-    $form.addEventListener('submit', function() {
+    $form.addEventListener('submit', function(ev) {
       var msg = $input.value;
       $input.value = "";
       client.send(msg);
+      ev.preventDefault();
     });
 
     $input.focus();
