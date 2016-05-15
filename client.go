@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 )
@@ -8,25 +9,25 @@ import (
 type client struct {
 	rwc  io.ReadWriteCloser
 	send <-chan []byte
-	recv chan<- []byte
+	recv chan<- map[string]interface{}
 }
 
-func newClient(rwc io.ReadWriteCloser, send <-chan []byte, recv chan<- []byte) *client {
+func newClient(rwc io.ReadWriteCloser, send <-chan []byte, recv chan<- map[string]interface{}) *client {
 	client := client{rwc, send, recv}
 	go client.read()
 	return &client
 }
 
 func (c *client) read() {
-	buf := make([]byte, 256)
+	decoder := json.NewDecoder(c.rwc)
 	for {
-		n, err := c.rwc.Read(buf)
+		var data map[string]interface{}
+		err := decoder.Decode(&data)
 		if err == io.EOF {
-      break
-    } else if err != nil {
+			break
+		} else if err != nil {
 			log.Fatal(err) // TODO: handle error
 		}
-		_ = n
-		c.recv <- buf[:n]
+		c.recv <- data
 	}
 }

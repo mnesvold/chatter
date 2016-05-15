@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -36,13 +37,13 @@ type testContext struct {
 	input  *bytes.Buffer
 	output *bytes.Buffer
 	send   chan []byte
-	recv   chan []byte
+	recv   chan map[string]interface{}
 }
 
 func newTestContext() *testContext {
 	rwc := newFakeRWC()
 	send := make(chan []byte)
-	recv := make(chan []byte)
+	recv := make(chan map[string]interface{})
 	client := newClient(rwc, send, recv)
 	return &testContext{
 		client: client,
@@ -54,15 +55,17 @@ func newTestContext() *testContext {
 }
 
 func TestClientRead(t *testing.T) {
-	expected := []byte("hello")
+	expected := map[string]interface{}{
+		"hello": "world",
+	}
 	ctx := newTestContext()
-	_, err := ctx.input.Write(expected)
+	_, err := ctx.input.Write([]byte("{\"hello\":\"world\"}"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	select {
 	case actual := <-ctx.recv:
-		if !bytes.Equal(actual, expected) {
+		if !reflect.DeepEqual(actual, expected) {
 			t.Fatalf("Expected %q; recv'd %q instead", expected, actual)
 		}
 	case <-time.After(1 * time.Second):
