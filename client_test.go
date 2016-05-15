@@ -59,7 +59,7 @@ func TestClientRead(t *testing.T) {
 		"hello": "world",
 	}
 	ctx := newTestContext()
-	_, err := ctx.input.Write([]byte("{\"hello\":\"world\"}"))
+	_, err := ctx.input.Write([]byte(`{"hello":"world"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,6 +68,17 @@ func TestClientRead(t *testing.T) {
 		if !reflect.DeepEqual(actual, expected) {
 			t.Fatalf("Expected %q; recv'd %q instead", expected, actual)
 		}
+	case <-time.After(1 * time.Second):
+		t.Fatal("timeout")
+	}
+}
+
+func TestClientWrite(t *testing.T) {
+	expected := []byte(`{"hello":"world"}`)
+	ctx := newTestContext()
+	select {
+	case ctx.send <- expected:
+		// continue the test
 	case <-time.After(1 * time.Second):
 		t.Fatal("timeout")
 	}
