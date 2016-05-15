@@ -27,7 +27,7 @@ func (c *client) read() {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			log.Fatal(err) // TODO: handle error
+			c.Close()
 		}
 		c.recv <- data
 	}
@@ -38,7 +38,7 @@ func (c *client) write() {
 		message := <-c.send
 		_, err := c.rwc.Write(message)
 		if err != nil {
-			log.Fatal(err) // TODO: handle error
+			c.Close()
 		}
 	}
 }

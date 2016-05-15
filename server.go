@@ -12,7 +12,7 @@ const (
 )
 
 type Server struct {
-	clients         []*client
+	clients         map[*client]bool
 	recvChan        chan map[string]interface{}
 	broadcastChan   chan []byte
 	newClientChan   chan *client
@@ -21,6 +21,7 @@ type Server struct {
 
 func NewServer() (server *Server) {
 	server = &Server{
+		clients:         make(map[*client]bool),
 		recvChan:        make(chan map[string]interface{}),
 		broadcastChan:   make(chan []byte),
 		newClientChan:   make(chan *client),
@@ -36,12 +37,13 @@ func (s *Server) handleClients() {
 		case payload := <-s.recvChan:
 			go s.receive(payload)
 		case payload := <-s.broadcastChan:
-			for _, client := range s.clients {
+			for client, _ := range s.clients {
 				go client.Send(payload)
 			}
 		case client := <-s.newClientChan:
-			s.clients = append(s.clients, client)
+			s.clients[client] = true
 		case client := <-s.closeClientChan:
+			delete(s.clients, client)
 			err := client.Close()
 			if err != nil {
 				log.Fatal(err)
