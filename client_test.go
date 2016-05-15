@@ -34,6 +34,7 @@ func newFakeRWC() *fakeRWC {
 
 type testContext struct {
 	client *client
+	rwc    *fakeRWC
 	input  *bytes.Buffer
 	output *bytes.Buffer
 	send   chan []byte
@@ -47,6 +48,7 @@ func newTestContext() *testContext {
 	client := newClient(rwc, send, recv)
 	return &testContext{
 		client: client,
+		rwc:    rwc,
 		input:  rwc.input,
 		output: rwc.output,
 		send:   send,
@@ -54,11 +56,22 @@ func newTestContext() *testContext {
 	}
 }
 
+func (ctx *testContext) Close(t *testing.T) (err error) {
+	err = ctx.client.Close()
+	if err != nil {
+		t.Error(err)
+	}
+	close(ctx.send)
+	close(ctx.recv)
+	return
+}
+
 func TestClientRead(t *testing.T) {
 	expected := map[string]interface{}{
 		"hello": "world",
 	}
 	ctx := newTestContext()
+	defer ctx.Close(t)
 	_, err := ctx.input.Write([]byte(`{"hello":"world"}`))
 	if err != nil {
 		t.Fatal(err)
@@ -76,10 +89,22 @@ func TestClientRead(t *testing.T) {
 func TestClientWrite(t *testing.T) {
 	expected := []byte(`{"hello":"world"}`)
 	ctx := newTestContext()
+	defer ctx.Close(t)
 	select {
 	case ctx.send <- expected:
 		// continue the test
 	case <-time.After(1 * time.Second):
 		t.Fatal("timeout")
+	}
+}
+
+func TestClientClose(t *testing.T) {
+	ctx := newTestContext()
+	if !ctx.rwc.isOpen {
+		t.Fatal("fake RWC was not open to begin with -- bad test setup")
+	}
+	ctx.Close(t)
+	if ctx.rwc.isOpen {
+		t.Error("client did not close its RWC on close")
 	}
 }

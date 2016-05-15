@@ -42,3 +42,8 @@ func (c *client) write() {
 		}
 	}
 }
+
+func (c *client) Close() (err error) {
+	err = c.rwc.Close()
+	return
+}
