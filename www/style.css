@@ -22,9 +22,22 @@ main {
 footer {
   border-top: medium solid green;
   background-color: lightgreen;
+  display: flex;
+}
+
+footer form {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+}
+
+footer #nickname,
+footer #submit-button {
+  flex-grow: 0;
 }
 
 footer input {
-  width: 100%;
-  box-sizing: border-box;
+  flex-grow: 1;
+  margin: 0.8em 0.5em;
+  font-size: large;
 }
