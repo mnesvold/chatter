@@ -53,9 +53,10 @@ func (s *Server) handleClients() {
 }
 
 func (s *Server) receive(payload map[string]interface{}) {
+	nickname := payload["nickname"]
 	message := payload["message"]
 
-	reply := map[string]interface{}{"message": message}
+	reply := map[string]interface{}{"nickname": nickname, "message": message}
 	replyPayload, err := json.Marshal(reply)
 	if err != nil {
 		log.Printf("marshalling %q failed: %v", reply, err)

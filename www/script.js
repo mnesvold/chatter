@@ -16,33 +16,40 @@
   }
 
   ChatClient.prototype.send = function(msg) {
-    var payload = JSON.stringify({ 'message': msg });
+    var payload = JSON.stringify(msg);
     this._ws.send(payload);
   };
 
   document.addEventListener('DOMContentLoaded', function() {
     var $form = document.getElementById('message-form');
     var $input = document.getElementById('message-input');
+    var $nickname = document.getElementById('nickname');
     var $transcript = document.getElementById('transcript');
 
     var client = new ChatClient(receiveMessage);
 
-    function appendMessage(msg) {
+    function appendMessage(nick, msg) {
       var $p = document.createElement('p');
-      $p.innerText = msg;
+      var $nick = document.createElement('span');
+      $nick.innerText = nick;
+      $nick.classList.add('nickname');
+      $p.appendChild($nick);
+      $p.appendChild(document.createTextNode(msg));
       $transcript.appendChild($p);
     }
 
     function receiveMessage(jsonPayload) {
       var payload = JSON.parse(jsonPayload);
+      var nick = payload.nickname || "Anonymous";
       var msg = payload.message;
-      appendMessage(msg);
+      appendMessage(nick, msg);
     }
 
     $form.addEventListener('submit', function(ev) {
       var msg = $input.value;
+      var nick = $nickname.value;
       $input.value = "";
-      client.send(msg);
+      client.send({ nickname: nick, message: msg });
       ev.preventDefault();
     });
 

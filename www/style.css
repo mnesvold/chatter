@@ -19,6 +19,14 @@ main {
   flex-grow: 1;
 }
 
+.transcript .nickname {
+  font-weight: bold;
+}
+
+.transcript .nickname::after {
+  content: ". ";
+}
+
 footer {
   border-top: medium solid green;
   background-color: lightgreen;
