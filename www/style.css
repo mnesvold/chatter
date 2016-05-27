@@ -19,6 +19,10 @@ main {
   flex-grow: 1;
 }
 
+.transcript {
+  padding: 0 1em;
+}
+
 .transcript .nickname {
   font-weight: bold;
 }
